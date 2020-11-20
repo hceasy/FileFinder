@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>File finder</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <!-- VUE -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
+    <!-- element-ui 样式 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.14.0/theme-chalk/index.min.css">
+    <!-- element-ui -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.14.0/index.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <el-card class="box-card">
+            <div slot="header" class="clearfix">
+                <el-row>
+                    <el-col :span="18"><span>File finder</span></el-col>
+                    <el-col :span="6">
+                        <el-input v-model="searchTxt" size="mini" placeholder="请输入文件名称"></el-input>
+                    </el-col>
+                </el-row>
+            </div>
+            <el-table size="mini" v-if="searchTxt.length > 0" stripe :data="targetFiles" style="width: 100%">
+                <el-table-column prop="fileName" label="文件名">
+                </el-table-column>
+                <el-table-column prop="createDate" label="创建日期">
+                </el-table-column>
+                <el-table-column prop="fileSrc" label="位置">
+                </el-table-column>
+                <el-table-column label="操作">
+                    <template slot-scope="scope">
+                        <el-button size="mini" @click="window.open(scope.row.fileSrc)">下载</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <el-table size="mini" v-else stripe :data="files" style="width: 100%">
+                <el-table-column prop="fileName" label="文件名">
+                </el-table-column>
+                <el-table-column prop="createDate" label="创建日期">
+                </el-table-column>
+                <el-table-column prop="fileSrc" label="位置">
+                </el-table-column>
+                <el-table-column label="操作">
+                    <template slot-scope="scope">
+                        <el-button size="mini" @click="window.open(scope.row.fileSrc)">下载</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-card>
+
+    </div>
+</body>
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            files: $files,
+            targetFiles: [],
+            searchTxt: ""
+        },
+        methods: {
+        },
+        mounted() {
+        },
+        watch: {
+            searchTxt: function (val, oldVal) {
+                const _that = this;
+                _that.targetFiles = [];
+                _that.files.forEach(file => {
+                    if (file.fileSrc.search(val) > -1) {
+                        _that.targetFiles.push(file);
+                    }
+                });
+            }
+        },
+    })
+</script>
+<style>
+</style>
+
+</html>
