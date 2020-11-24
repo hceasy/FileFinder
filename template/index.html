@@ -8,80 +8,155 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
     <!-- VUE -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.0.2/dist/vue.global.min.js"></script>
     <!-- element-ui 样式 -->
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.14.0/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@1.0.1-alpha.15/lib/theme-chalk/index.css">
     <!-- element-ui -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.14.0/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@1.0.1-alpha.15/lib/index.js"></script>
 </head>
 
 <body>
     <div id="app">
-        <el-card class="box-card">
-            <div slot="header" class="clearfix">
+
+        <el-container>
+            <el-header>
                 <el-row>
-                    <el-col :span="18"><span>File finder</span></el-col>
+                    <el-col :span="18">
+                        <b>File finder</b>
+                    </el-col>
                     <el-col :span="6">
-                        <el-input v-model="searchTxt" size="mini" placeholder="请输入文件名称"></el-input>
+                        <el-input v-model="searchTxt" size="mini" placeholder="请输入文件名称">
+                            <template v-slot:append>
+                                <el-button icon="el-icon-search" v-on:click="search"></el-button>
+                            </template>
+                        </el-input>
                     </el-col>
                 </el-row>
-            </div>
-            <el-table size="mini" v-if="searchTxt.length > 0" stripe :data="targetFiles" style="width: 100%">
-                <el-table-column prop="fileName" label="文件名">
-                </el-table-column>
-                <el-table-column prop="createDate" label="创建日期">
-                </el-table-column>
-                <el-table-column prop="fileSrc" label="位置">
-                </el-table-column>
-                <el-table-column label="操作">
-                    <template slot-scope="scope">
-                        <el-button size="mini" @click="window.open(scope.row.fileSrc)">下载</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-table size="mini" v-else stripe :data="files" style="width: 100%">
-                <el-table-column prop="fileName" label="文件名">
-                </el-table-column>
-                <el-table-column prop="createDate" label="创建日期">
-                </el-table-column>
-                <el-table-column prop="fileSrc" label="位置">
-                </el-table-column>
-                <el-table-column label="操作">
-                    <template slot-scope="scope">
-                        <el-button size="mini" @click="window.open(scope.row.fileSrc)">下载</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-        </el-card>
+                <el-row>
+                    <i style="font-size: 12px;">Last update: {{updateTime}}</i>
+                </el-row>
+            </el-header>
+            <el-container>
+                <el-aside style="width: 200px;">
+                    <el-card>
+                        <div slot="header" class="clearfix">
+                        </div>
+                        <el-tree @node-click="fileFilter" style="overflow: auto;" :data="files"></el-tree>
+                    </el-card>
+                </el-aside>
+                <el-main>
+                    <el-card class="box-card">
+                        <div slot="header" class="clearfix">
+                            <el-row>
+
+                                <el-breadcrumb separator="/">
+                                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+                                    <el-breadcrumb-item><a href="/">活动管理</a></el-breadcrumb-item>
+                                    <el-breadcrumb-item>活动列表</el-breadcrumb-item>
+                                    <el-breadcrumb-item>活动详情</el-breadcrumb-item>
+                                </el-breadcrumb>
+                            </el-row>
+                        </div>
+                        <el-table size="mini" stripe :data="targetFiles"
+                            style="width: 100%">
+                            <el-table-column prop="name" label="文件名">
+                            </el-table-column>
+                            <el-table-column prop="time" label="创建日期">
+                            </el-table-column>
+                            <el-table-column prop="size" label="文件大小">
+                            </el-table-column>
+                            <!-- <el-table-column prop="fileSrc" label="位置">
+                            </el-table-column> -->
+                            <!-- <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button size="mini" @click="window.open(scope.row.fileSrc)">下载</el-button>
+                                </template>
+                            </el-table-column> -->
+                        </el-table>
+                    </el-card>
+                </el-main>
+            </el-container>
+        </el-container>
 
     </div>
 </body>
 <script>
-    new Vue({
-        el: "#app",
-        data: {
-            files: $files,
-            targetFiles: [],
-            searchTxt: ""
-        },
-        methods: {
-        },
-        mounted() {
-        },
-        watch: {
-            searchTxt: function (val, oldVal) {
-                const _that = this;
-                _that.targetFiles = [];
-                _that.files.forEach(file => {
-                    if (file.fileSrc.search(val) > -1) {
-                        _that.targetFiles.push(file);
+    const App = {
+        data() {
+            return {
+                updateTime: '2020-11-24 11:30:24',
+                files: [
+                    {
+                        label: 'testFolder',
+                        children: [
+                        ],
+                        src: '/usr/testFolder',
+                        files: [
+                            {
+                                name: 'test.txt',
+                                time: '2020-11-24 12:30',
+                                size: '23211',
+                                src: '/usr/testFolder/test.txt'
+                            }
+                        ]
                     }
-                });
+                ],
+                targetFiles: [],
+                searchTxt: ""
             }
         },
-    })
+        methods: {
+            search() {
+                console.log(this.searchTxt)
+            },
+            fileFilter(data) {
+                // data.files.forEach(file => {
+                //     let obj = {
+                //         name: file.name,
+                //         size: file.size,
+                //         time: file.time,
+                //         src: file.src
+                //     }
+                //     this.targetFiles.push(obj)
+
+                // });
+                this.targetFiles = data.files
+                // console.log(this.targetFiles)
+            }
+        }
+    }
+    Vue.createApp(App)
+        .use(ElementPlus)
+        .mount('#app')
 </script>
 <style>
+    .el-main {
+        padding: 5px 0px 5px 0;
+    }
+
+    .el-header {
+        padding-top: 10px;
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)
+    }
+
+    .el-aside {
+        padding: 5px 5px 5px 0;
+    }
+
+    .el-tree>.el-tree-node {
+        min-width: 100%;
+        display: inline-block;
+    }
+
+    .clearfix:before,
+    .clearfix:after {
+        display: table;
+        content: "";
+    }
+
+    .clearfix:after {
+        clear: both
+    }
 </style>
 
 </html>
