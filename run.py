@@ -5,7 +5,7 @@
 @Author: hceasy
 LastEditors: hceasy
 @Date: 2020-11-20 15:22:39
-LastEditTime: 2021-08-04 10:05:08
+LastEditTime: 2021-08-05 01:16:59
 '''
 # -*- coding: utf-8 -*-
 import sys
@@ -59,7 +59,7 @@ htmlTemplate = '''
                     <el-card>
                         <div slot="header" class="clearfix">
                         </div>
-                        <el-tree @node-click="fileFilter" style="overflow: auto;" :data="files"></el-tree>
+                        <el-tree @node-click="fileFilter" style="overflow: auto;" :data="filesTree"></el-tree>
                     </el-card>
                 </el-aside>
                 <el-main>
@@ -68,28 +68,25 @@ htmlTemplate = '''
                             <el-row>
 
                                 <el-breadcrumb separator="/">
-                                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-                                    <el-breadcrumb-item><a href="/">活动管理</a></el-breadcrumb-item>
-                                    <el-breadcrumb-item>活动列表</el-breadcrumb-item>
-                                    <el-breadcrumb-item>活动详情</el-breadcrumb-item>
+                                    <el-breadcrumb-item v-for="(dir,index) in fileDir" :key="index">{{dir}}</el-breadcrumb-item>
                                 </el-breadcrumb>
                             </el-row>
                         </div>
                         <el-table size="mini" stripe :data="targetFiles"
                             style="width: 100%">
-                            <el-table-column prop="name" label="文件名">
+                            <el-table-column prop="fileName" label="文件名">
                             </el-table-column>
-                            <el-table-column prop="time" label="创建日期">
+                            <el-table-column prop="createDate" label="创建日期">
                             </el-table-column>
-                            <el-table-column prop="size" label="文件大小">
+                            <el-table-column prop="fileSize" label="文件大小(KB)">
                             </el-table-column>
-                            <!-- <el-table-column prop="fileSrc" label="位置">
-                            </el-table-column> -->
-                            <!-- <el-table-column label="操作">
-                                <template slot-scope="scope">
-                                    <el-button size="mini" @click="window.open(scope.row.fileSrc)">下载</el-button>
+                            <el-table-column prop="fileSrc" label="位置">
+                            </el-table-column>
+                            <el-table-column label="操作">
+                                <template #default="scope">
+                                    <el-button size="mini" @click="download(scope.row.fileSrc)">下载</el-button>
                                 </template>
-                            </el-table-column> -->
+                            </el-table-column>
                         </el-table>
                     </el-card>
                 </el-main>
@@ -102,29 +99,35 @@ htmlTemplate = '''
     const App = {
         data() {
             return {
-                updateTime: '2020-11-24 11:30:24',
-                files:$filesJson, 
+                updateTime: '$updateTime',
+                filesTree:$filesJson,
+                filesList:$filesList,
+                fileDir:[],
                 targetFiles: [],
                 searchTxt: ""
             }
         },
         methods: {
             search() {
-                console.log(this.searchTxt)
+                const _that = this
+                _that.targetFiles = []
+                if(_that.searchTxt.length === 0){
+                    return
+                }
+                _that.filesList.forEach(function(file){
+                    if(file.fileSrc.indexOf(_that.searchTxt) > -1){
+                        _that.targetFiles.push(file)
+                    }
+                })
+
+            },
+            download(url){
+                window.open(url)
             },
             fileFilter(data) {
-                // data.files.forEach(file => {
-                //     let obj = {
-                //         name: file.name,
-                //         size: file.size,
-                //         time: file.time,
-                //         src: file.src
-                //     }
-                //     this.targetFiles.push(obj)
-
-                // });
                 this.targetFiles = data.files
-                // console.log(this.targetFiles)
+                this.fileDir = data.fileDir.split('\\\\')
+                console.log(this.fileDir)
             }
         }
     }
@@ -168,10 +171,12 @@ DIR = ''
 OUT = ''
 cut = 'G:\\'  # 需要替换的路径
 rep = 'file://'  # 替换为   C:\\xxx\xxx.dat => file:\\xxx\xxx.dat
+filesList = []
 floderTree = []
 
+
 def main():
-    global OUT,DIR
+    global OUT, DIR, filesList
     parser = argparse.ArgumentParser(description="""
     File finder v0.0.1
     """)
@@ -188,15 +193,18 @@ def main():
             # print(os.path.join(path, file_name))
             filePath = os.path.join(path, file_name)
             fileCreateDate = time.strftime(
-                    '%Y-%m-%d %H:%M:%S',
-                    time.localtime(os.path.getctime(filePath)))
+                '%Y-%m-%d %H:%M:%S',
+                time.localtime(os.path.getctime(filePath)))
+            fileSize = os.path.getsize(filePath) / float(1024)
             file = {
-                    'label': file_name,
-                    'createDate': fileCreateDate,
-                    'fileSrc': filePath.replace(cut, rep).replace('\\', '/')
-                    }
+                'fileName': file_name,
+                'createDate': fileCreateDate,
+                'fileSrc': filePath.replace(cut, rep).replace('\\', '/'),
+                'fileSize': round(fileSize, 2),
+            }
             floder.append(file)
-        if(len(floder)>0):
+            filesList.append(file)
+        if (len(floder) > 0):
             flodersList[path] = floder
     createFloderTreeList(flodersList)
 
@@ -207,54 +215,64 @@ def createFloderTreeList(flodersList):
         floderPathArray = floders.split('\\')
         fileTree = {}
         for index in range(len(floderPathArray)):
-            if(index == 0):
+            if (index == 0):
                 fileTree = {
-                        'label':floderPathArray[len(floderPathArray) - index - 1],
-                        'children':flodersList[floders]
-                        }
+                    'label': floderPathArray[len(floderPathArray) - index - 1],
+                    'children': [],
+                    'files': flodersList[floders],
+                    'fileDir': floders
+                }
             else:
                 fileTree = {
-                        'label':floderPathArray[len(floderPathArray) - index - 1],
-                        'children':[fileTree]
-                        }
+                    'label': floderPathArray[len(floderPathArray) - index - 1],
+                    'children': [fileTree],
+                    'files': [],
+                    'fileDir': floders
+                }
         fileCache.append(fileTree)
     createFloderTree(fileCache)
 
+
 def createFloderTree(floderTreeList):
-    while (len(floderTreeList)>0):
+    while (len(floderTreeList) > 0):
         nextFloder = floderTreeList.pop()
-        treeCheck(floderTree,nextFloder)
+        treeCheck(floderTree, nextFloder)
     outPutFile(floderTree)
 
-def treeCheck(targetTree,nextFloder):
+
+def treeCheck(targetTree, nextFloder):
     targetFloder = None
     for floder in targetTree:
-        if(floder['label'] == nextFloder['label']):
+        if (floder['label'] == nextFloder['label']):
             targetFloder = floder
-            break 
+            break
     if (targetFloder is None):
         targetTree.append(nextFloder)
     else:
-        if(('children' in nextFloder.keys()) & ('children' in targetFloder.keys())):
-            if(len(nextFloder['children'])==0):
-                targetFloder['children'].append(nextFloder)
+        if (('children' in nextFloder.keys()) &
+            ('children' in targetFloder.keys())):
+            if (len(nextFloder['children']) == 0):
+                targetFloder['files'] = nextFloder['files']
             else:
                 targetFloder = targetFloder['children']
                 nextFloder = nextFloder['children'][0]
-                treeCheck(targetFloder,nextFloder)
-        elif('children' in nextFloder.keys()):
+                treeCheck(targetFloder, nextFloder)
+        elif ('children' in nextFloder.keys()):
             targetFloder['children'] = [nextFloder]
-        elif('children' in targetFloder.keys()):
+        elif ('children' in targetFloder.keys()):
             targetFloder['children'].append(nextFloder)
+
 
 def outPutFile(floderTree):
     global OUT
     filesJson = json.dumps(floderTree)
     html = htmlTemplate.replace('$filesJson', filesJson)
+    updateTime = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    html = html.replace('$updateTime', updateTime)
+    html = html.replace('$filesList', json.dumps(filesList))
     f = open(OUT, 'w', encoding="utf-8")
     f.write(html)
     f.close()
-
 
 
 if __name__ == "__main__":
